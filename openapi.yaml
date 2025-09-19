@@ -1,0 +1,207 @@
+openapi: 3.1.0
+info:
+  title: AI Connector
+  version: 0.1.0
+paths:
+  /healthz:
+    get:
+      summary: Health Check
+      operationId: health_check_healthz_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Health Check Healthz Get
+  /chat/completions:
+    post:
+      summary: Create Chat Completion
+      operationId: create_chat_completion_chat_completions_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletionResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /chat/completions/stream:
+    post:
+      summary: Stream Chat Completion
+      operationId: stream_chat_completion_chat_completions_stream_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ChatCompletionRequest:
+      properties:
+        provider:
+          type: string
+          enum:
+          - openai
+          - ollama
+          title: Provider
+          description: LLM backend to use
+          default: openai
+        model:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Model
+          description: Model identifier for the selected provider
+        messages:
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+          type: array
+          title: Messages
+        temperature:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Temperature
+        max_tokens:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Max Tokens
+        top_p:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Top P
+        response_format:
+          anyOf:
+          - $ref: '#/components/schemas/ResponseFormatConfig'
+          - type: 'null'
+      type: object
+      required:
+      - messages
+      title: ChatCompletionRequest
+    ChatCompletionResponse:
+      properties:
+        provider:
+          type: string
+          enum:
+          - openai
+          - ollama
+          title: Provider
+        model:
+          type: string
+          title: Model
+        content:
+          title: Content
+        usage:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Usage
+        raw:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Raw
+      type: object
+      required:
+      - provider
+      - model
+      - content
+      title: ChatCompletionResponse
+    ChatMessage:
+      properties:
+        role:
+          type: string
+          enum:
+          - system
+          - user
+          - assistant
+          - tool
+          title: Role
+        content:
+          type: string
+          title: Content
+      type: object
+      required:
+      - role
+      - content
+      title: ChatMessage
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ResponseFormatConfig:
+      properties:
+        type:
+          type: string
+          enum:
+          - text
+          - json_object
+          - json_schema
+          title: Type
+          description: Desired response format
+        json_schema:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Json Schema
+          description: JSON schema to enforce when type is json_schema
+      type: object
+      required:
+      - type
+      title: ResponseFormatConfig
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
