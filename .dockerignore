@@ -5,3 +5,5 @@ __pycache__
 .Python
 .env
 .git
+frontend/node_modules
+frontend/dist

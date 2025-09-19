@@ -41,6 +41,8 @@ class OllamaProvider(ChatProvider):
                 "eval_count": data.get("eval_count"),
                 "eval_duration": data.get("eval_duration"),
                 "total_duration": data.get("total_duration"),
+                "prompt_eval_count": data.get("prompt_eval_count"),
+                "prompt_eval_duration": data.get("prompt_eval_duration"),
             }
         return ChatCompletionResponse(
             provider="ollama",

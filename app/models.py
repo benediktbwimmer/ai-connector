@@ -52,3 +52,26 @@ class ChatCompletionChunk(BaseModel):
 
 
 ChunkIterator = AsyncIterator[ChatCompletionChunk]
+
+
+class SettingsUpdate(BaseModel):
+    openai_api_key: Optional[str] = None
+    openai_base_url: Optional[str] = None
+
+
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+
+
+class SettingsResponse(BaseModel):
+    openai_api_key_set: bool
+    openai_base_url: str
+    profile_name: str
+    profile_email: Optional[str] = None
+
+
+class ModelInfo(BaseModel):
+    provider: Literal["openai", "ollama"]
+    model: str
+    display_name: str

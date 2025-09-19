@@ -13,25 +13,22 @@ from app.models import (
     ResponseFormatConfig,
 )
 from app.providers.base import ChatProvider
+from app.runtime import get_runtime_settings
 
 
 SETTINGS = get_settings()
 
 
 class OpenAIProvider(ChatProvider):
-    def __init__(self) -> None:
-        """OpenAI provider for chat completions."""
-        
     async def create_completion(
         self, request: ChatCompletionRequest
     ) -> ChatCompletionResponse:
         payload = self._build_payload(request, stream=False)
-        if not SETTINGS.openai_api_key:
-            raise RuntimeError("OPENAI_API_KEY is not configured")
+        api_key, base_url = self._resolve_api_details()
         async with httpx.AsyncClient(timeout=120) as client:
             response = await client.post(
-                url=f"{SETTINGS.openai_base_url}/chat/completions",
-                headers=self._default_headers(),
+                url=f"{base_url}/chat/completions",
+                headers=self._default_headers(api_key),
                 json=payload,
             )
         response.raise_for_status()
@@ -57,13 +54,12 @@ class OpenAIProvider(ChatProvider):
         self, request: ChatCompletionRequest
     ) -> AsyncIterator[ChatCompletionChunk]:
         payload = self._build_payload(request, stream=True)
-        if not SETTINGS.openai_api_key:
-            raise RuntimeError("OPENAI_API_KEY is not configured")
+        api_key, base_url = self._resolve_api_details()
         async with httpx.AsyncClient(timeout=None) as client:
             async with client.stream(
                 "POST",
-                url=f"{SETTINGS.openai_base_url}/chat/completions",
-                headers=self._default_headers(),
+                url=f"{base_url}/chat/completions",
+                headers=self._default_headers(api_key),
                 json=payload,
             ) as response:
                 response.raise_for_status()
@@ -73,13 +69,6 @@ class OpenAIProvider(ChatProvider):
                     if line.startswith(":"):
                         continue
                     if line.strip() == "data: [DONE]":
-                        yield ChatCompletionChunk(
-                            provider="openai",
-                            model=payload["model"],
-                            delta=None,
-                            done=True,
-                            raw={"event": "done"},
-                        )
                         break
                     if not line.startswith("data: "):
                         continue
@@ -88,13 +77,17 @@ class OpenAIProvider(ChatProvider):
                     delta = data["choices"][0]["delta"].get("content")
                     if delta is None and data["choices"][0]["delta"].get("tool_calls"):
                         delta = data["choices"][0]["delta"]["tool_calls"]
+                    finish_reason = data["choices"][0].get("finish_reason")
+                    is_done = finish_reason is not None
                     yield ChatCompletionChunk(
                         provider="openai",
                         model=data.get("model", payload["model"]),
                         delta=delta,
-                        done=False,
+                        done=is_done,
                         raw=data,
                     )
+                    if is_done:
+                        break
 
     def _build_payload(
         self, request: ChatCompletionRequest, stream: bool
@@ -114,6 +107,8 @@ class OpenAIProvider(ChatProvider):
             payload["response_format"] = self._map_response_format(
                 request.response_format
             )
+        if stream:
+            payload["stream_options"] = {"include_usage": True}
         return payload
 
     @staticmethod
@@ -139,8 +134,17 @@ class OpenAIProvider(ChatProvider):
         raise ValueError(f"Unsupported response format type: {response_format.type}")
 
     @staticmethod
-    def _default_headers() -> Dict[str, str]:
+    def _default_headers(api_key: str) -> Dict[str, str]:
         return {
-            "Authorization": f"Bearer {SETTINGS.openai_api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
+
+    @staticmethod
+    def _resolve_api_details() -> tuple[str, str]:
+        runtime_settings = get_runtime_settings()
+        api_key = runtime_settings.openai_api_key or SETTINGS.openai_api_key
+        base_url = runtime_settings.openai_base_url or SETTINGS.openai_base_url
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY is not configured")
+        return api_key, base_url
