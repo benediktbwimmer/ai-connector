@@ -11,7 +11,7 @@ FROM python:3.11-slim AS backend
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=8000
+    PORT=8300
 
 WORKDIR /app
 
@@ -23,6 +23,5 @@ COPY app ./app
 COPY openapi.yaml ./openapi.yaml
 COPY --from=frontend-builder /app/frontend/dist ./app/static
 
-EXPOSE 8000
-
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+EXPOSE 8300
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8300}"]
