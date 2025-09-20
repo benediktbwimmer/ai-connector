@@ -75,56 +75,78 @@ function SettingsPage(): JSX.Element {
     }
   };
 
-  if (!settings) {
-    return (
-      <div className="card">
-        <h2 className="section-title">Settings</h2>
-        <p>Loading…</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="card">
-      <h2 className="section-title">Settings</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="openaiKey">OpenAI API key</label>
-          <input
-            id="openaiKey"
-            type="password"
-            placeholder={settings.openai_api_key_set ? 'Key configured' : 'Enter API key'}
-            value={apiKeyDraft}
-            onChange={(event) => setApiKeyDraft(event.target.value)}
-          />
-          <small style={{ color: '#94a3b8' }}>
-            {settings.openai_api_key_set
-              ? 'A key is currently stored. Submit a new one to replace it or clear to remove.'
-              : 'No key stored yet. Provide one to enable OpenAI completions.'}
-          </small>
+    <div className="flex justify-center px-4 py-10 sm:px-8">
+      <div className="w-full max-w-3xl space-y-6">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-500">Settings</p>
+          <h1 className="text-3xl font-semibold text-slate-100">Connect your providers</h1>
+          <p className="max-w-2xl text-sm text-slate-400">
+            Manage how the connector talks to external APIs. Keys are stored securely on the server and never exposed in the browser.
+          </p>
         </div>
 
-        <div>
-          <label htmlFor="openaiBase">OpenAI base URL</label>
-          <input
-            id="openaiBase"
-            value={baseUrlDraft}
-            onChange={(event) => setBaseUrlDraft(event.target.value)}
-          />
-        </div>
+        <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-6 shadow-glow">
+          {!settings ? (
+            <div className="text-sm text-slate-400">Loading…</div>
+          ) : (
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-[0.3em] text-slate-500" htmlFor="openaiKey">
+                  OpenAI API key
+                </label>
+                <input
+                  id="openaiKey"
+                  type="password"
+                  placeholder={settings.openai_api_key_set ? 'Key configured' : 'Enter API key'}
+                  value={apiKeyDraft}
+                  onChange={(event) => setApiKeyDraft(event.target.value)}
+                  className="w-full rounded-xl border border-slate-800/70 bg-slate-900/60 px-4 py-3 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+                />
+                <p className="text-xs text-slate-500">
+                  {settings.openai_api_key_set
+                    ? 'A key is currently stored. Submit a new one to replace it or clear to remove it.'
+                    : 'No key stored yet. Provide one to enable OpenAI completions.'}
+                </p>
+              </div>
 
-        <div className="flex-row" style={{ marginTop: '1rem' }}>
-          <button type="submit" disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
-          </button>
-          <button type="button" className="secondary" onClick={handleClearKey} disabled={saving}>
-            Clear key
-          </button>
-        </div>
-      </form>
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-[0.3em] text-slate-500" htmlFor="openaiBase">
+                  OpenAI base URL
+                </label>
+                <input
+                  id="openaiBase"
+                  value={baseUrlDraft}
+                  onChange={(event) => setBaseUrlDraft(event.target.value)}
+                  className="w-full rounded-xl border border-slate-800/70 bg-slate-900/60 px-4 py-3 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+                />
+              </div>
 
-      {status && <div className="success">{status}</div>}
-      {error && <div className="error">{error}</div>}
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-400 via-sky-500 to-indigo-500 px-6 py-2 text-sm font-medium text-slate-950 transition hover:from-sky-300 hover:via-sky-400 hover:to-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {saving ? 'Saving…' : 'Save changes'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearKey}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-800/70 bg-slate-900/60 px-6 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-700 hover:text-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Clear key
+                </button>
+                <span className="ml-auto text-xs text-slate-500">Last synced: {new Date().toLocaleTimeString()}</span>
+              </div>
+            </form>
+          )}
+
+          {status && <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{status}</div>}
+          {error && <div className="mt-4 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</div>}
+        </div>
+      </div>
     </div>
   );
 }

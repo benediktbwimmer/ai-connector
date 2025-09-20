@@ -74,85 +74,113 @@ function MonitoringPage(): JSX.Element {
     return Object.entries(snapshot.per_model).sort(([, a], [, b]) => b.requests - a.requests);
   }, [snapshot]);
 
-  const statusClass = connectionState === 'online' ? 'status-dot online' : 'status-dot';
+  const statusLabel =
+    connectionState === 'online' ? 'Live' : connectionState === 'connecting' ? 'Connecting…' : 'Offline';
+  const statusColor =
+    connectionState === 'online'
+      ? 'bg-emerald-400 shadow-[0_0_0_4px_rgba(16,185,129,0.15)]'
+      : connectionState === 'connecting'
+        ? 'bg-amber-400 shadow-[0_0_0_4px_rgba(251,191,36,0.15)]'
+        : 'bg-rose-400 shadow-[0_0_0_4px_rgba(248,113,113,0.15)]';
 
   return (
-    <div className="card">
-      <div className="flex-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 className="section-title">Monitoring</h2>
-        <div className="status-indicator">
-          <span className={statusClass} />
-          <span>{connectionState === 'online' ? 'Live' : connectionState === 'connecting' ? 'Connecting…' : 'Offline'}</span>
+    <div className="flex justify-center px-4 py-10 sm:px-8">
+      <div className="w-full max-w-5xl space-y-6">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-500">Monitoring</p>
+          <h1 className="text-3xl font-semibold text-slate-100">Live usage pulses</h1>
+          <p className="max-w-3xl text-sm text-slate-400">
+            Keep an eye on request volume, token consumption, and cost across every connected model provider. Data updates in
+            near real-time whenever the socket is online.
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 p-6 shadow-glow">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/60 pb-4">
+            <span className="text-sm font-medium text-slate-200">Usage overview</span>
+            <div className="flex items-center gap-3 rounded-full border border-slate-800/70 bg-slate-900/60 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-400">
+              <span className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
+              <span>{statusLabel}</span>
+            </div>
+          </div>
+
+          {!snapshot || !totals ? (
+            <div className="py-10 text-center text-sm text-slate-400">Waiting for usage data…</div>
+          ) : (
+            <div className="mt-6 space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <MetricCard label="Total requests" value={formatNumber(totals.requests)} />
+                <MetricCard label="Prompt tokens" value={formatNumber(totals.prompt_tokens)} />
+                <MetricCard label="Completion tokens" value={formatNumber(totals.completion_tokens)} />
+                <MetricCard label="Estimated cost" value={formatCurrency(totals.cost_usd)} />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <MetricCard label="Eval count" value={formatNumber(totals.eval_count)} />
+                <MetricCard label="Last updated" value={new Date(snapshot.last_updated).toLocaleTimeString()} />
+                <MetricCard label="Models tracked" value={models.length.toString()} />
+              </div>
+
+              <div className="overflow-hidden rounded-2xl border border-slate-800/60">
+                {models.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-sm text-slate-400">No model usage recorded yet.</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-slate-800/60 text-left text-sm text-slate-300">
+                      <thead className="bg-slate-900/60 text-xs uppercase tracking-[0.3em] text-slate-500">
+                        <tr>
+                          <th className="px-6 py-3 font-semibold">Provider</th>
+                          <th className="px-6 py-3 font-semibold">Model</th>
+                          <th className="px-6 py-3 font-semibold">Requests</th>
+                          <th className="px-6 py-3 font-semibold">Tokens (prompt / completion)</th>
+                          <th className="px-6 py-3 font-semibold">Eval count</th>
+                          <th className="px-6 py-3 font-semibold">Cost</th>
+                          <th className="px-6 py-3 font-semibold">Updated</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {models.map(([key, info]) => (
+                          <tr key={key} className="hover:bg-slate-900/40">
+                            <td className="px-6 py-4">
+                              <span className="inline-flex items-center rounded-full border border-sky-400/40 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-200">
+                                {info.provider}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-slate-200">{info.model}</td>
+                            <td className="px-6 py-4">{formatNumber(info.requests)}</td>
+                            <td className="px-6 py-4 text-slate-300">
+                              {formatNumber(info.prompt_tokens)} / {formatNumber(info.completion_tokens)}
+                            </td>
+                            <td className="px-6 py-4">{formatNumber(info.eval_count)}</td>
+                            <td className="px-6 py-4">{formatCurrency(info.cost_usd)}</td>
+                            <td className="px-6 py-4 text-slate-300">
+                              {new Date(info.last_updated).toLocaleTimeString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-      {!snapshot && <p>Waiting for usage data…</p>}
-      {snapshot && totals && (
-        <div className="monitoring-grid">
-          <div>
-            <h3>Total requests</h3>
-            <p style={{ fontSize: '2rem', margin: '0.25rem 0' }}>{formatNumber(totals.requests)}</p>
-          </div>
-          <div className="flex-row">
-            <div className="flex-1">
-              <h4>Prompt tokens</h4>
-              <p>{formatNumber(totals.prompt_tokens)}</p>
-            </div>
-            <div className="flex-1">
-              <h4>Completion tokens</h4>
-              <p>{formatNumber(totals.completion_tokens)}</p>
-            </div>
-            <div className="flex-1">
-              <h4>Eval count</h4>
-              <p>{formatNumber(totals.eval_count)}</p>
-            </div>
-          </div>
-          <div>
-            <h4>Estimated cost</h4>
-            <p style={{ fontSize: '1.5rem', margin: '0.25rem 0' }}>{formatCurrency(totals.cost_usd)}</p>
-          </div>
-          <div>
-            <h4>Last updated</h4>
-            <p>{new Date(snapshot.last_updated).toLocaleTimeString()}</p>
-          </div>
-          <div>
-            <h3>Models</h3>
-            {models.length === 0 ? (
-              <p>No usage yet.</p>
-            ) : (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Provider</th>
-                    <th>Model</th>
-                    <th>Requests</th>
-                    <th>Tokens (prompt / completion)</th>
-                    <th>Eval count</th>
-                    <th>Cost</th>
-                    <th>Updated</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {models.map(([key, info]) => (
-                    <tr key={key}>
-                      <td>
-                        <span className="badge">{info.provider}</span>
-                      </td>
-                      <td>{info.model}</td>
-                      <td>{formatNumber(info.requests)}</td>
-                      <td>
-                        {formatNumber(info.prompt_tokens)} / {formatNumber(info.completion_tokens)}
-                      </td>
-                      <td>{formatNumber(info.eval_count)}</td>
-                      <td>{formatCurrency(info.cost_usd)}</td>
-                      <td>{new Date(info.last_updated).toLocaleTimeString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      )}
+    </div>
+  );
+}
+
+interface MetricCardProps {
+  label: string;
+  value: string;
+}
+
+function MetricCard({ label, value }: MetricCardProps): JSX.Element {
+  return (
+    <div className="rounded-2xl border border-slate-800/60 bg-slate-900/60 px-5 py-4">
+      <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-100">{value}</p>
     </div>
   );
 }
