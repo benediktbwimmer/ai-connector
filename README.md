@@ -18,7 +18,7 @@ Environment variables:
 - `PORT` (default `8000`): HTTP port.
 - `OPENAI_API_KEY`: Required for OpenAI provider requests (can also be provided at runtime via the UI or `/settings`).
 - `OPENAI_BASE_URL` (optional): Override the OpenAI API endpoint.
-- `OLLAMA_BASE_URL` (default `http://127.0.0.1:11434`): Ollama API endpoint.
+- `OLLAMA_BASE_URL` (default `http://127.0.0.1:11434`; use `http://host.docker.internal:11434` when running in Docker): Ollama API endpoint.
 
 ## Running locally
 
@@ -47,7 +47,12 @@ Build and run the container:
 
 ```bash
 docker build -t ai-connector .
-docker run --rm -p 8000:8000 -e PORT=8000 -e OPENAI_API_KEY=your_key ai-connector
+docker run --rm \\
+  -p 8000:8000 \\
+  -e PORT=8000 \\
+  -e OPENAI_API_KEY=your_key \\
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \\
+  ai-connector
 ```
 
 ## Request payload
